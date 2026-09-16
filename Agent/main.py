@@ -1,6 +1,8 @@
+# region Learning
+# endregion
+
 from langchain_openrouter import ChatOpenRouter
-from langchain.chat_models import init_chat_model
-from langchain.messages import SystemMessage, AnyMessage, ToolMessage
+from langchain.messages import SystemMessage, AnyMessage, ToolMessage, HumanMessage
 import operator
 from typing_extensions import TypedDict, Annotated
 from typing import Literal
@@ -24,12 +26,10 @@ Tools = [WriteFile, ReadFile, SearchContent, TerminalAccess, EditLineChange, rea
 tools_by_name = {tool.name:tool for tool in Tools}
 Builder = Builder.bind_tools(Tools)
 
-#defined state
 class MessageState(TypedDict):
     messages:Annotated[list[AnyMessage], operator.add]
     llm_call:int
 
-#defined llm_call --> will be used as llm brain
 def llm_call(state:dict)->str:
     return {
         "messages" : [
@@ -89,3 +89,19 @@ with open("agent_graph.png", "wb") as f:
     f.write(graph_png)
 
 print("Graph saved to agent_graph.png")
+
+
+msg = [HumanMessage(content="we have few bugs in this chess game, fix them all")]
+
+
+for chunks in agent.stream(
+    {"messages":msg},
+    stream_mode="messages"
+):
+    print(chunks)
+    
+#region Learning
+# basic agent is done now, 
+# need to start with how to make it better, what other things we can add to this
+#  
+#endregion
