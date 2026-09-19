@@ -1,3 +1,4 @@
+import shlex
 from langchain.tools import tool
 import subprocess
 from pathlib import Path
@@ -53,17 +54,25 @@ def SearchContent(
         return f"searche results are - {result}"
     except Exception as e:
         return f"found error {str(e)}"
-    
+
 @tool
-def TerminalAccess(cmd:str)->str:
+def TerminalAccess(cmd: str) -> str:
     """Execute a terminal command and return its output."""
     try:
-        result = subprocess.run(cmd, text=True, capture_output=True)
+        result = subprocess.run(
+            shlex.split(cmd),
+            text=True,
+            capture_output=True
+        )
 
-        return f"TerminalAccess tool call results are - {result}"
+        return (
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}\n"
+            f"return code: {result.returncode}"
+        )
 
     except Exception as e:
-        return f"found error on TerminalAccess tool - {str(e)}"
+        return f"TerminalAccess tool error: {e}"
     
 @tool 
 def EditLineChange(lineNum:int, fileLoc:str, content:str)->str:

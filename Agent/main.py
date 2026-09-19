@@ -9,16 +9,18 @@ from typing import Literal
 from langgraph.graph import StateGraph, END, START 
 from IPython.display import Image, display
 from dotenv import load_dotenv
+load_dotenv()
+
 
 from Tools.standardTools.index import WriteFile, ReadFile, SearchContent, TerminalAccess, EditLineChange
 from Tools.WebTools.index import readContent, searchOnline
 from Tools.GitTools.index import pullRepo
+from Tools.PlannerTools.index import plannerTool
 
-load_dotenv()
 
 
 Builder = ChatOpenRouter(
-    model="nvidia/nemotron-3.5-lightning:free",
+    model="openrouter/free",
     temperature=0
 )
 
@@ -26,17 +28,26 @@ Tools = [WriteFile, ReadFile, SearchContent, TerminalAccess, EditLineChange, rea
 tools_by_name = {tool.name:tool for tool in Tools}
 Builder = Builder.bind_tools(Tools)
 
-class MessageState(TypedDict):
+class AgentState(TypedDict):
+    plan:list[str]
+    currentStep:int
+    acceptance_criteria:list[str]
+    allowedPath:str 
     messages:Annotated[list[AnyMessage], operator.add]
     llm_call:int
 
 def llm_call(state:dict)->str:
+    
+    plan = state.get("plan", [])
+    currentStep = state.get("currentStep", 0)
+    acceptance_criteria = state.get("acceptance_criteria", [])
+
     return {
         "messages" : [
             Builder.invoke(
                 [
                     SystemMessage(
-                        content="you are coding agent"
+                        content=f"you are coding agent, follow the {plan}, your current goal is to work on {plan[currentStep]}, acceptance criteria is strictly {acceptance_criteria}" if len(plan) else "you are coding agent"
                     )
                 ]
                 + state["messages"]
@@ -53,7 +64,7 @@ def tool_node(state:dict):
         result.append(ToolMessage(content=observation, tool_call_id = tool_call["id"]))
     return {"messages":result} 
 
-def should_continue(state:MessageState) -> str:
+def should_continue(state:AgentState) -> str:
     """
     Docstring for should_continue
     
@@ -62,40 +73,87 @@ def should_continue(state:MessageState) -> str:
     :return: Description
     :rtype: Any | Literal['tool_node']
     """
-    message = state["messages"]
-    last_message = message[-1]
+    last_message = state["messages"][-1]
 
     if last_message.tool_calls:
         return "tool_node"
     
+    if state["currentStep"] < len(state["plan"]) - 1:
+        return "advance_step_node"
+
     return END
 
-agent_builder = StateGraph(MessageState)
+def planner_node(state:AgentState) -> str:
+    """
+        planner node is kept as node and not a tool call becasue its changing the state of the graph
+        I researched about it, tool calls should never do that
+    """
+    print("inside planner node now")
+
+    result = plannerTool.invoke({"messages":state["messages"]})
+    if result["plan_needed"] is True:
+        return {
+            "plan" : result["steps"],
+            "acceptance_criteria":result["acceptance_criteria"],
+            "currentStep":0
+        }
+    return {
+        "plan": [],
+        "acceptance_criteria": [],
+        "currentStep": 0
+    }
+
+def advance_step_node(state:AgentState):
+    """
+    Docstring for advance_step_node
+    
+    :param state: Description
+    :type state: AgentState
+    """
+    advancedStep = state["currentStep"]+1
+    return {
+        "currentStep":advancedStep
+    }
+
+
+agent_builder = StateGraph(AgentState)
+
 agent_builder.add_node("llm_call", llm_call)
 agent_builder.add_node("tool_node", tool_node)
+agent_builder.add_node("planner_node", planner_node)
+agent_builder.add_node("advance_step_node", advance_step_node)
 
-agent_builder.add_edge(START, "llm_call")
+agent_builder.add_edge(START, "planner_node")
+agent_builder.add_edge("tool_node", "llm_call")
+agent_builder.add_edge("planner_node", "llm_call")
+agent_builder.add_edge("advance_step_node", "llm_call")
 agent_builder.add_conditional_edges(
     "llm_call",
     should_continue , 
-    ["tool_node", END] 
+    ["tool_node", "advance_step_node", END] 
 )
-agent_builder.add_edge("tool_node", "llm_call")
+
 agent = agent_builder.compile()
 
-graph_png = agent.get_graph(xray=True).draw_mermaid_png()
+# graph_png = agent.get_graph(xray=True).draw_mermaid_png()
+# with open("agent_graph.png", "wb") as f:
+#     f.write(graph_png)
+# print("Graph saved to agent_graph.png")
 
-with open("agent_graph.png", "wb") as f:
-    f.write(graph_png)
+print("program will ask for inputs now")
 
-print("Graph saved to agent_graph.png")
+msg = input("type your message here - ")
+msg = [HumanMessage(content=msg)]
+allowedPath = input("enter allowed path here - ")
 
-
-msg = [HumanMessage(content="we have few bugs in this chess game, fix them all")]
-
+print("program should start with streaming now")
 
 for chunks in agent.stream(
-    {"messages":msg},
+    {
+        "messages":msg,
+        "allowedPath":allowedPath,
+        "currentStep":0
+    },
     stream_mode="messages"
 ):
     print(chunks)
