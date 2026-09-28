@@ -39,11 +39,14 @@ setting up projects locally, push changes, raise PR
 10. Let's start with state, we need filesChanged to keep track of all the filesChanged in single session , tasks(this is more towards todolist, but I'm not really sure if state is shared with llms or not) , skills_currently_in_use - maybe this can be an array to tarck which skills users want right now to use , for this one i think I have to actually study how skills are attached to agents
 11. on 18th sept, a very important thing i found out - tool calls are never meant to change the state of the graph, its always the nodes that must update the state. for planning tool call, I made a node instead of making a tool call because plan and current step is being added in the graph's state.
 12. Testing is one thing, considering every task equally important and serious is different thing, half assed tic-tac-toe game can still gets compiled and built succesfully, but making it production level is completely different instinct. Hence I actually need "acceptance criteria" along with plan.
-
-## Actionables
-1. Rich state
-2. checkpoint
-3. 
+13. 19th sept - and today I will start with checkpointing. 
+        ## Actionables
+        1. Rich state
+        2. checkpoint
+14. today is 28th sept morning monday, and i found many problems with this agent
+- 1. allowed path is not being passed to the llm_call, just populated in state only
+- 2. making definite call to planner_tool is wrong move, I thought it should be definite path, but turns out it will only generate generic plan without having knowledge abuot the project, architecutre and file system. 
+- 3. I did one small wrong move - vibe coded plan node related part, so i went through the code, understand almost everythign except planner_node, theres so much going on i feel is python first syntax and toolMessage and so manythings. 
 
 ------------------Then Taste against the stanford chess game-----------------
 ## Actionable

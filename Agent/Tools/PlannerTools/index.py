@@ -38,12 +38,25 @@ def plannerTool(messages:list[AnyMessage]):
 
     print("invoking the planner agent")
 
+    task = "\n\n".join(message.content for message in messages)
     result = PlannerAgent.invoke([
-        HumanMessage(content=f"{Instructions}\n\n{messages[-1]}")
+        HumanMessage(content=f"{Instructions}\n\n{task}")
     ])
 
     print(f"planner agent's output is - {result}")
     return result.model_dump()
+
+@tool
+def request_plan(context:str):
+    """
+    Call this once you understand the project files and architecture, and the task is big enough to need a plan (changes more than 3 files).
+    Call it alone, not together with other tools.
+
+    :param context: what you learned while exploring - relevant files, architecture, and what needs to change
+    :type context: str
+    """
+    # never executed - should_continue routes this call to planner_node instead of tool_node
+    return context
 
 
     

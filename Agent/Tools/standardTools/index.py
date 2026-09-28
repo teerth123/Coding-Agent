@@ -56,11 +56,11 @@ def SearchContent(
         return f"found error {str(e)}"
 
 @tool
-def TerminalAccess(cmd: str) -> str:
+def TerminalAccess(command: str) -> str:
     """Execute a terminal command and return its output."""
     try:
         result = subprocess.run(
-            shlex.split(cmd),
+            shlex.split(command),
             text=True,
             capture_output=True
         )
