@@ -26,7 +26,7 @@ from Tools.PlannerTools.index import plannerTool, request_plan
 
 
 Builder = ChatOpenRouter(
-    model="nvidia/nemotron-3-super-120b-a12b:free",
+    model="openrouter/free",
     temperature=0
 )
 
@@ -166,12 +166,6 @@ agent_builder.add_conditional_edges(
     ["tool_node", "advance_step_node","planner_node", END] 
 )
 
-threadID = uuid4()
-config={
-            "configurable":{
-                "thread_id":str(threadID)
-            }
-        }
 
 async def main():
     async with AsyncPostgresSaver.from_conn_string(DATABASE_URL) as checkpointer:
@@ -181,22 +175,39 @@ async def main():
             checkpointer=checkpointer
         )
 
-        msg = input("type your message here - ")
-        msg = [HumanMessage(content=msg)]
-        allowedPath = input("enter allowed path here - ")
+        while True:
+            msg = input("type your message here - ")
 
-        print("thread id is - ", threadID)
+            if msg=="STOP DADDY":
+                break
 
-        async for chunks in agent.astream(
-            {
-                "messages":msg,
-                "allowedPath":allowedPath,
-                "currentStep":0
-            },
-            config=config,
-            stream_mode="messages"
-        ):
-            print(chunks)
+            msg = [HumanMessage(content=msg)]
+            allowedPath = input("enter allowed path here - ")
+            threadID = input("enter threadid, or leave blank")
+            if not threadID:
+                threadID = uuid4()
+
+            config={
+                        "configurable":{
+                            "thread_id":str(threadID)
+                        }
+                    }
+
+            print("thread id is - ", threadID)
+
+            async for chunks in agent.astream(
+                {
+                    "messages":msg,
+                    "plan":[],
+                    "acceptance_criteria":[],
+                    "allowedPath":allowedPath,
+                    "currentStep":0,
+                    "llm_call":0
+                },
+                config=config,
+                stream_mode="messages"
+            ):
+                print(chunks)
 
 
 if __name__ == "__main__":

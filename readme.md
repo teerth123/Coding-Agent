@@ -47,8 +47,21 @@ setting up projects locally, push changes, raise PR
 - 1. allowed path is not being passed to the llm_call, just populated in state only
 - 2. making definite call to planner_tool is wrong move, I thought it should be definite path, but turns out it will only generate generic plan without having knowledge abuot the project, architecutre and file system. 
 - 3. I did one small wrong move - vibe coded plan node related part, so i went through the code, understand almost everythign except planner_node, theres so much going on i feel is python first syntax and toolMessage and so manythings. 
-
-------------------Then Taste against the stanford chess game-----------------
+15. Todays 29th Sept, read the code and acc to my understanding, llm_call node is conditionally connected to tool_node, to make a plan we first request the plan with request_plan tool call, unlike other tool calls, after executoin this is routed to planner_node instead of llm_call node.
+16. 6th of October, checkpointing is done, i tried running this agent on top of the stanford chess game, multiple times!! The problem was - its not buggy codebase, there are no left overs in the chess application, so without looking at what it is, I just used to prompt the agent - 
+        ```
+         we have a buggy chess project inside /home/batman/Desktop/Projects/Agent/testingChess
+         fix it - "plan": [
+                 "Inspect repository",
+                 "Implement chess logic",
+                 "Run tests",
+                 "Fix failures",
+                 "Report results",
+             ],
+        ```
+17. After multiple runs, I found out there's a test named directory inside their repo, but thats also more about building the coding agent which we already have done. So yeah.. I'm  just gonna skip that thing now. 
+18. The more lucrative thing in the market is - running agent in closed sandboxed environment. 
+19. Having so many things but not any of them being useful --> so I have to double down on making it useful, best way might be running it against some repo or project.  
 ## Actionable
 1. Backend in fastapi + dockerfile
 2. git tool calls + github oauth etc
