@@ -18,7 +18,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-from Tools.standardTools.index import WriteFile, ReadFile, SearchContent, TerminalAccess, EditLineChange
+from Tools.standardTools.index import WriteFile, ReadFile, SearchContent, TerminalAccess, EditTool
 from Tools.WebTools.index import readContent, searchOnline
 from Tools.GitTools.index import pullRepo
 from Tools.PlannerTools.index import plannerTool, request_plan
@@ -30,7 +30,7 @@ Builder = ChatOpenRouter(
     temperature=0
 )
 
-Tools = [WriteFile, ReadFile, SearchContent, TerminalAccess, EditLineChange, readContent, searchOnline, pullRepo]
+Tools = [WriteFile, ReadFile, SearchContent, TerminalAccess, EditTool, readContent, searchOnline, pullRepo]
 tools_by_name = {tool.name:tool for tool in Tools}
 # request_plan is bound to the llm but kept out of tools_by_name, tool_node never runs it
 Builder = Builder.bind_tools(Tools + [request_plan])
@@ -207,7 +207,8 @@ async def main():
                 config=config,
                 stream_mode="messages"
             ):
-                print(chunks)
+                print(chunks['content'])
+                print(chunks['tool_calls'])
 
 
 if __name__ == "__main__":
